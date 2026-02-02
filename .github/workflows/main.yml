@@ -1,0 +1,21 @@
+name: Build APK
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build with Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        with:
+          buildozer_version: master
+          command: buildozer android debug
+          repository_display_name: Mi Garaje
+          
+      - name: Upload APK
+        uses: actions/upload-artifact@v2
+        with:
+          name: MiGaraje-APK
+          path: bin/*.apk
