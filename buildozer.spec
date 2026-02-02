@@ -17,4 +17,4 @@ android.accept_sdk_license = True
 
 # Si NO tienes un archivo llamado icono.png en GitHub, 
 # comenta esta línea con un # delante o fallará
- icon.filename = %(source.dir)s/icono.png
+icon.filename = %(source.dir)s/icono.png
