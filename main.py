@@ -34,14 +34,12 @@ class Bloque(BoxLayout):
     def __init__(self, titulo, **kwargs):
         super().__init__(orientation='vertical', size_hint_y=None, spacing=10, padding=20, **kwargs)
         self.bind(minimum_height=self.setter('height'))
-        # TÍTULOS DE BLOQUE MÁS GRANDES (font_size: 20)
         self.add_widget(Label(text=titulo.upper(), size_hint_y=None, height=50, 
                               bold=True, color=(0.1, 0.4, 0.7, 1), font_size=20, halign="left"))
 
 class PantallaBase(Screen):
     def crear_contenedor(self, titulo_pantalla):
         layout_principal = BoxLayout(orientation='vertical')
-        # CABECERA MÁS GRANDE (font_size: 26)
         cabecera = Label(text=titulo_pantalla, size_hint_y=None, height=90, bold=True, font_size=26, color=(1,1,1,1))
         with cabecera.canvas.before:
             Color(0.1, 0.4, 0.7, 1)
@@ -60,18 +58,15 @@ class PantallaBase(Screen):
         self.rect.size = instance.size
 
     def input_est(self, hint, multi=False, alto=80):
-        # TEXTO DE ENTRADA MÁS GRANDE (font_size: 22)
         return TextInput(hint_text=hint, multiline=multi, size_hint_y=None, height=alto, font_size=22, padding=[15, 20])
 
     def check_est(self, texto):
         box = BoxLayout(orientation='horizontal', size_hint_y=None, height=60)
-        # TEXTO DE ETIQUETAS MÁS GRANDE (font_size: 20)
         box.add_widget(Label(text=texto, color=(0.2, 0.2, 0.2, 1), font_size=20))
         cb = CheckBox(color=(0.1, 0.4, 0.7, 1), size_hint_x=None, width=80)
         box.add_widget(cb)
         return box, cb
 
-# --- PÁGINAS (con botones y textos ampliados) ---
 class PaginaUno(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -158,7 +153,8 @@ class PantallaHistorial(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.l = self.crear_contenedor("HISTORIAL")
-        self.buscador = self.input_est("Escribe la Matrícula...")
+        # Aquí la mejora: busca por nombre o matricula
+        self.buscador = self.input_est("Busca por Nombre o Matrícula...")
         self.buscador.bind(text=self.cargar_datos)
         self.content.add_widget(self.buscador)
         self.lista_resultados = BoxLayout(orientation='vertical', size_hint_y=None, spacing=15)
@@ -171,10 +167,12 @@ class PantallaHistorial(PantallaBase):
 
     def cargar_datos(self, instance, value):
         self.lista_resultados.clear_widgets()
+        if len(value) < 1: return
         conn = conectar_bd(); c = conn.cursor()
-        c.execute("SELECT modelo, matricula, fecha, coste FROM fichas WHERE matricula LIKE ?", ('%'+value+'%',))
+        # Mejora en la consulta SQL para buscar en ambos campos
+        c.execute("SELECT modelo, matricula, fecha, coste FROM fichas WHERE matricula LIKE ? OR modelo LIKE ?", ('%'+value+'%', '%'+value+'%'))
         for r in c.fetchall():
-            btn = Button(text=f"{r[2]} | {r[0]} | {r[3]}€", size_hint_y=None, height=70, font_size=18)
+            btn = Button(text=f"{r[2]} | {r[0]} | {r[1]} | {r[3]}€", size_hint_y=None, height=80, font_size=18)
             self.lista_resultados.add_widget(btn)
         conn.close()
 
