@@ -19,7 +19,6 @@ from kivy.uix.popup import Popup
 from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle
 
-# Intentar importar FPDF para el PDF
 try:
     from fpdf import FPDF
     PDF_DISPONIBLE = True
@@ -84,12 +83,18 @@ class PantallaBase(Screen):
 
 class PantallaHistorial(PantallaBase):
     def on_pre_enter(self):
+        if not hasattr(self, 'buscador'):
+            self.buscador = TextInput(hint_text="BUSCAR MATRÍCULA...", size_hint_y=None, height=100, font_size=32, multiline=False)
+            self.buscador.bind(text=self.actualizar_lista)
+            # Se añade justo debajo de la cabecera
+            self.add_widget(self.buscador, index=2) 
         self.actualizar_lista()
 
-    def actualizar_lista(self):
+    def actualizar_lista(self, instance=None, value=""):
         self.content.clear_widgets()
+        filtro = self.buscador.text if hasattr(self, 'buscador') else ""
         conn = conectar_bd(); c = conn.cursor()
-        c.execute("SELECT id, modelo, matricula, fecha FROM fichas ORDER BY id DESC")
+        c.execute("SELECT id, modelo, matricula, fecha FROM fichas WHERE matricula LIKE ? ORDER BY id DESC", (f'%{filtro}%',))
         for fila in c.fetchall():
             item = BoxLayout(size_hint_y=None, height=120, spacing=10)
             btn_ver = Button(text=f"{fila[3]} - {fila[1]} ({fila[2]})", font_size=28)
@@ -121,14 +126,12 @@ class PaginaUno(PantallaBase):
         self.mec = self.input_g("Mecánico"); self.mod = self.input_g("Modelo")
         self.mat = self.input_g("Matrícula"); self.km = self.input_g("Kilómetros")
         for w in [self.mec, self.mod, self.mat, self.km]: self.content.add_widget(w)
-        
         btn_hist = Button(text="HISTORIAL", background_color=(0.2, 0.5, 0.7, 1), font_size=30, bold=True)
         btn_hist.bind(on_press=lambda x: setattr(self.manager, 'current', 'historial'))
         btn_sig = Button(text="SIGUIENTE >", background_color=(0.1, 0.6, 0.3, 1), font_size=30, bold=True)
         btn_sig.bind(on_press=self.ir_sig)
         self.nav_bar.add_widget(btn_hist); self.nav_bar.add_widget(btn_sig)
         self.add_widget(l)
-
     def ir_sig(self, x):
         App.get_running_app().datos.update({'mec':self.mec.text, 'mod':self.mod.text, 'mat':self.mat.text, 'km':self.km.text})
         self.manager.current = 'pag2'
@@ -144,7 +147,6 @@ class PaginaDos(PantallaBase):
         btn_sig.bind(on_press=self.ir_sig)
         self.nav_bar.add_widget(btn_sig)
         self.add_widget(l)
-
     def ir_sig(self, x):
         App.get_running_app().datos.update({'ac':str(self.ac_chk.active), 'ad':self.ac_det.text, 'ak':self.ac_km.text, 'cc':str(self.cj_chk.active), 'cd':self.cj_det.text, 'ck':self.cj_km.text})
         self.manager.current = 'pag3'
@@ -153,23 +155,19 @@ class PaginaTres(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         l = self.crear_contenedor("FILTROS Y RUEDAS")
-        # Filtros
         self.f1_b, self.f1 = self.check_g("F. Aire"); self.content.add_widget(self.f1_b)
         self.f2_b, self.f2 = self.check_g("F. Aceite"); self.content.add_widget(self.f2_b)
         self.f3_b, self.f3 = self.check_g("F. Polen"); self.content.add_widget(self.f3_b)
         self.f4_b, self.f4 = self.check_g("F. Combustible"); self.content.add_widget(self.f4_b)
         self.fa_b, self.fa = self.check_g("Anticongelante"); self.content.add_widget(self.fa_b)
-        # Ruedas
         self.r1_b, self.rdc = self.check_g("Ruedas Del."); self.content.add_widget(self.r1_b)
         self.rdk = self.input_g("Km Ruedas Del."); self.content.add_widget(self.rdk)
         self.r2_b, self.rtc = self.check_g("Ruedas Tras."); self.content.add_widget(self.r2_b)
         self.rtk = self.input_g("Km Ruedas Tras."); self.content.add_widget(self.rtk)
-        
         btn_sig = Button(text="SIGUIENTE >", background_color=(0.1, 0.6, 0.3, 1), font_size=30, bold=True)
         btn_sig.bind(on_press=self.ir_sig)
         self.nav_bar.add_widget(btn_sig)
         self.add_widget(l)
-
     def ir_sig(self, x):
         App.get_running_app().datos.update({'f1':str(self.f1.active), 'f2':str(self.f2.active), 'f3':str(self.f3.active), 'f4':str(self.f4.active), 'fa':str(self.fa.active), 'rdc':str(self.rdc.active), 'rdk':self.rdk.text, 'rtc':str(self.rtc.active), 'rtk':self.rtk.text})
         self.manager.current = 'pag4'
@@ -179,20 +177,15 @@ class PaginaCuatro(PantallaBase):
         super().__init__(**kwargs)
         l = self.crear_contenedor("FINALIZAR E ITV")
         fr_b, self.fre = self.check_g("Frenos OK"); self.content.add_widget(fr_b)
-        # AÑADIDO: Líquido de frenos justo debajo de frenos
         lf_b, self.lf = self.check_g("Líquido de Frenos"); self.content.add_widget(lf_b)
-        
         lu_b, self.luc = self.check_g("Luces OK"); self.content.add_widget(lu_b)
         ag_b, self.agu = self.check_g("Niveles OK"); self.content.add_widget(ag_b)
-        
         box_itv = BoxLayout(orientation='horizontal', size_hint_y=None, height=120, spacing=10)
         self.itv_m = self.input_g("Mes ITV"); self.itv_a = self.input_g("Año ITV")
         box_itv.add_widget(self.itv_m); box_itv.add_widget(self.itv_a); self.content.add_widget(box_itv)
-        
         self.obs = self.input_g("Averías/Detalles", multi=True, alto=250)
         self.cos = self.input_g("COSTE (€)")
         self.content.add_widget(self.obs); self.content.add_widget(self.cos)
-
         btn_fin = Button(text="PDF Y WHATSAPP", background_color=(0, 0.5, 0.8, 1), font_size=34, bold=True)
         btn_fin.bind(on_press=self.finalizar)
         self.nav_bar.add_widget(btn_fin)
@@ -201,8 +194,6 @@ class PaginaCuatro(PantallaBase):
     def finalizar(self, x):
         d = App.get_running_app().datos
         f_hoy = datetime.now().strftime("%d/%m/%Y")
-        
-        # 1. Guardar en BD
         conn = conectar_bd(); c = conn.cursor()
         c.execute('''INSERT INTO fichas (modelo, matricula, km_act, aceite_chk, aceite_det, aceite_km, 
                      caja_chk, caja_det, caja_km, f_aire, f_aceite, f_polen, f_comb, f_anti, 
@@ -214,27 +205,22 @@ class PaginaCuatro(PantallaBase):
                    str(self.fre.active), str(self.lf.active), str(self.luc.active), str(self.agu.active), "True",
                    self.obs.text, self.cos.text, f_hoy, d['mec'], self.itv_m.text, self.itv_a.text))
         conn.commit(); conn.close()
-
-        # 2. Generar PDF Real
-        nombre_archivo = f"Mantenimiento_{d['mat']}_{datetime.now().strftime('%H%M')}.pdf"
+        
+        nombre_archivo = f"Mantenimiento_{d['mat']}.pdf"
         if PDF_DISPONIBLE:
             pdf = FPDF()
             pdf.add_page()
+            if os.path.exists("logo.png"): pdf.image("logo.png", 10, 8, 33)
             pdf.set_font("Arial", 'B', 16)
-            pdf.cell(200, 10, txt="FICHA DE TALLER - RAUL PLAZA", ln=True, align='C')
-            pdf.ln(10)
-            pdf.set_font("Arial", size=12)
-            pdf.cell(200, 10, txt=f"Fecha: {f_hoy} | Mecánico: {d['mec']}", ln=True)
-            pdf.cell(200, 10, txt=f"Vehículo: {d['mod']} | Matrícula: {d['mat']}", ln=True)
-            pdf.cell(200, 10, txt=f"Kilómetros: {d['km']}", ln=True)
-            pdf.ln(5)
-            pdf.cell(200, 10, txt=f"Coste Total: {self.cos.text} Euros", ln=True)
+            pdf.cell(200, 10, txt="REPARACION R.P Y A.J", ln=True, align='C')
+            pdf.ln(10); pdf.set_font("Arial", size=12)
+            pdf.cell(200, 10, txt=f"Fecha: {f_hoy} | Vehículo: {d['mod']} | Matrícula: {d['mat']}", ln=True)
+            pdf.multi_cell(0, 10, txt=f"Trabajos: {self.obs.text}")
+            pdf.cell(200, 10, txt=f"Coste: {self.cos.text} Euros", ln=True)
             pdf.output(nombre_archivo)
 
-        # 3. Mandar por WhatsApp (Texto formateado)
-        mensaje = f"*TALLER RAUL PLAZA*\n\n✅ *Vehículo:* {d['mod']}\n🆔 *Matrícula:* {d['mat']}\n🛠 *Trabajo:* Mantenimiento General\n💶 *Coste:* {self.cos.text}€\n🗓 *Próxima ITV:* {self.itv_m.text}/{self.itv_a.text}"
+        mensaje = f"*REPARACION R.P Y A.J*\n\n✅ *Vehículo:* {d['mod']}\n🆔 *Matrícula:* {d['mat']}\n💶 *Coste:* {self.cos.text}€"
         webbrowser.open(f"https://wa.me/?text={quote(mensaje)}")
-        
         self.manager.current = 'pag1'
 
 class MiApp(App):
