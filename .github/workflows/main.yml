@@ -3,7 +3,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -42,10 +42,11 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          buildozer init
-          # Forzamos que el spec sea el que ya tenemos
-          buildozer android debug
-          
+          # Si el archivo no existe, lo crea. Si existe, no hace nada y no da error.
+          if [ ! -f buildozer.spec ]; then buildozer init; fi
+          # Comando para fabricar la APK ignorando advertencias de root
+          buildozer -v android debug
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
