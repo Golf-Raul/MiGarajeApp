@@ -27,8 +27,11 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          yes | buildozer android licenses
+          # Compilamos directamente; la aceptación de licencias la forzamos en el .spec
           buildozer -v android debug
+        env:
+          # Esta línea acepta las licencias internamente durante la compilación
+          APP_ANDROID_ACCEPT_SDK_LICENSE: "True"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
