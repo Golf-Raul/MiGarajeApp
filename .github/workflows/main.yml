@@ -21,19 +21,19 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev autoconf automake libtool pkg-config cmake gettext libffi-dev libssl-dev
+          sudo apt-get install -y build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-size libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev autoconf automake libtool pkg-config cmake gettext libffi-dev libssl-dev
           pip install --upgrade pip
           pip install buildozer cython==0.29.33 setuptools
 
       - name: Build with Buildozer
         run: |
-          if [ ! -f buildozer.spec ]; then buildozer init; fi
-          # Corrección de permisos crítica
-          chmod +x gradlew || true
+          # Aceptar licencias de Android automáticamente (Vital para que no falle)
+          yes | buildozer android licenses
+          # Compilar en modo debug
           buildozer -v android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MiGaraje-APK
+          name: ElGarajeDePipo-APK
           path: bin/*.apk
