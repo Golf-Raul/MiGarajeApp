@@ -30,7 +30,7 @@ def conectar_bd():
         else:
             directorio = os.path.dirname(os.path.abspath(__file__))
         
-        # Versión 6: Incluye columna para tipo de anticongelante
+        # Versión 6 para incluir el tipo de anticongelante
         ruta_db = os.path.join(directorio, 'garaje_pipo_v6.db')
         conn = sqlite3.connect(ruta_db)
         cursor = conn.cursor()
@@ -41,7 +41,7 @@ def conectar_bd():
                            caja_chk TEXT, caja_det TEXT, caja_km TEXT,
                            f_aire TEXT, ref_f1 TEXT, f_aceite TEXT, ref_f2 TEXT, 
                            f_polen TEXT, ref_f3 TEXT, f_comb TEXT, ref_f4 TEXT, 
-                           f_anti TEXT, anti_tipo TEXT,
+                           f_anti TEXT, anti_det TEXT,
                            r_del_chk TEXT, r_del_km TEXT, r_tra_chk TEXT, r_tra_km TEXT, 
                            frenos TEXT, luces TEXT, averia TEXT, coste TEXT, fecha TEXT, 
                            mecanico TEXT, itv_mes TEXT, itv_ano TEXT)''')
@@ -87,14 +87,15 @@ class PaginaUno(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         l = self.crear_contenedor("1. DATOS GENERALES")
-        self.mec = self.input_g("Nombre del Mecánico"); self.mod = self.input_g("Modelo del Vehículo")
-        self.mat = self.input_g("Matrícula"); self.km = self.input_g("Kilómetros Actuales")
+        self.mec = self.input_g("Nombre del Mecánico")
+        self.mod = self.input_g("Modelo del Vehículo")
+        self.mat = self.input_g("Matrícula")
+        self.km = self.input_g("Kilómetros Actuales")
         for w in [self.mec, self.mod, self.mat, self.km]: self.content.add_widget(w)
-        btn_h = Button(text="HISTORIAL", background_color=(0.4, 0.4, 0.4, 1))
-        btn_h.bind(on_press=lambda x: setattr(self.manager, 'current', 'historial'))
-        btn_s = Button(text="SIGUIENTE", background_color=(0.1, 0.5, 0.8, 1), bold=True)
-        btn_s.bind(on_press=self.sig)
+        btn_h = Button(text="HISTORIAL", background_color=(0.4, 0.4, 0.4, 1)); btn_h.bind(on_press=lambda x: setattr(self.manager, 'current', 'historial'))
+        btn_s = Button(text="SIGUIENTE", background_color=(0.1, 0.5, 0.8, 1), bold=True); btn_s.bind(on_press=self.sig)
         self.nav_bar.add_widget(btn_h); self.nav_bar.add_widget(btn_s); self.add_widget(l)
+
     def sig(self, x):
         App.get_running_app().datos.update({'mec':self.mec.text, 'mod':self.mod.text, 'mat':self.mat.text, 'km':self.km.text})
         self.manager.current = 'pag2'
@@ -102,13 +103,14 @@ class PaginaUno(PantallaBase):
 class PaginaDos(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        l = self.crear_contenedor("2. LÍQUIDOS")
-        b1, self.ac_chk = self.check_g("Aceite Motor"); self.ac_det = self.input_g("Tipo Aceite"); self.ac_km = self.input_g("Próx. Cambio KM")
-        b2, self.cj_chk = self.check_g("Valvulina Caja"); self.cj_det = self.input_g("Tipo Valvulina"); self.cj_km = self.input_g("Próx. Caja KM")
+        l = self.crear_contenedor("2. MOTOR")
+        b1, self.ac_chk = self.check_g("Cambio Aceite Motor"); self.ac_det = self.input_g("Tipo Aceite"); self.ac_km = self.input_g("Próximo Cambio (KM)")
+        b2, self.cj_chk = self.check_g("Cambio Valvulina Caja"); self.cj_det = self.input_g("Tipo Valvulina"); self.cj_km = self.input_g("Próximo Cambio Caja")
         for w in [b1, self.ac_det, self.ac_km, b2, self.cj_det, self.cj_km]: self.content.add_widget(w)
         btn_a = Button(text="ATRÁS"); btn_a.bind(on_press=lambda x: setattr(self.manager, 'current', 'pag1'))
         btn_s = Button(text="SIGUIENTE"); btn_s.bind(on_press=self.sig)
         self.nav_bar.add_widget(btn_a); self.nav_bar.add_widget(btn_s); self.add_widget(l)
+
     def sig(self, x):
         App.get_running_app().datos.update({'ac_chk':str(self.ac_chk.active), 'ac_det':self.ac_det.text, 'ac_km':self.ac_km.text, 'cj_chk':str(self.cj_chk.active), 'cj_det':self.cj_det.text, 'cj_km':self.cj_km.text})
         self.manager.current = 'pag3'
@@ -116,62 +118,67 @@ class PaginaDos(PantallaBase):
 class PaginaTres(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        l = self.crear_contenedor("3. FILTROS Y REFRIG.")
-        b1, self.f1 = self.check_g("F. Aire"); self.r1 = self.input_g("Ref. Aire")
-        b2, self.f2 = self.check_g("F. Aceite"); self.r2 = self.input_g("Ref. Aceite")
-        b3, self.f3 = self.check_g("F. Polen"); self.r3 = self.input_g("Ref. Polen")
-        b4, self.f4 = self.check_g("F. Comb."); self.r4 = self.input_g("Ref. Comb.")
-        b5, self.anti = self.check_g("Anticongelante"); self.anti_t = self.input_g("Tipo Anticongelante (G12, G13...)")
-        for w in [b1, self.r1, b2, self.r2, b3, self.r3, b4, self.r4, b5, self.anti_t]: self.content.add_widget(w)
+        l = self.crear_contenedor("3. FILTROS Y ANTICONGELANTE")
+        b1, self.f1 = self.check_g("Filtro Aire"); self.r1 = self.input_g("Ref. Aire")
+        b2, self.f2 = self.check_g("Filtro Aceite"); self.r2 = self.input_g("Ref. Aceite")
+        b3, self.f3 = self.check_g("Filtro Polen"); self.r3 = self.input_g("Ref. Polen")
+        b4, self.f4 = self.check_g("Filtro Combustible"); self.r4 = self.input_g("Ref. Combustible")
+        b5, self.anti = self.check_g("Cambio Anticongelante")
+        self.anti_det = self.input_g("Tipo Anticongelante (ej: G12 50%)")
+        for w in [b1, self.r1, b2, self.r2, b3, self.r3, b4, self.r4, b5, self.anti_det]: self.content.add_widget(w)
         btn_a = Button(text="ATRÁS"); btn_a.bind(on_press=lambda x: setattr(self.manager, 'current', 'pag2'))
         btn_s = Button(text="SIGUIENTE"); btn_s.bind(on_press=self.sig)
         self.nav_bar.add_widget(btn_a); self.nav_bar.add_widget(btn_s); self.add_widget(l)
+
     def sig(self, x):
-        App.get_running_app().datos.update({'f1':str(self.f1.active), 'r1':self.r1.text, 'f2':str(self.f2.active), 'r2':self.r2.text, 'f3':str(self.f3.active), 'r3':self.r3.text, 'f4':str(self.f4.active), 'r4':self.r4.text, 'anti':str(self.anti.active), 'anti_t':self.anti_t.text})
+        App.get_running_app().datos.update({'f1':str(self.f1.active), 'r1':self.r1.text, 'f2':str(self.f2.active), 'r2':self.r2.text, 'f3':str(self.f3.active), 'r3':self.r3.text, 'f4':str(self.f4.active), 'r4':self.r4.text, 'anti':str(self.anti.active), 'anti_det':self.anti_det.text})
         self.manager.current = 'pag4'
 
 class PaginaCuatro(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        l = self.crear_contenedor("4. FINALIZAR")
+        l = self.crear_contenedor("4. REVISIÓN Y COSTES")
         b1, self.rd_c = self.check_g("Ruedas Del."); self.rd_k = self.input_g("KM Ruedas Del.")
         b2, self.rt_c = self.check_g("Ruedas Tra."); self.rt_k = self.input_g("KM Ruedas Tra.")
         b3, self.fre = self.check_g("Frenos Ok"); b4, self.luc = self.check_g("Luces Ok")
-        self.itv_m = self.input_g("Mes ITV"); self.itv_a = self.input_g("Año ITV")
-        self.obs = self.input_g("Observaciones", multi=True, alto='100dp'); self.cos = self.input_g("Coste (€)")
+        self.itv_m = self.input_g("Mes ITV (MM)"); self.itv_a = self.input_g("Año ITV (AAAA)")
+        self.obs = self.input_g("Observaciones / Otros", multi=True, alto='100dp')
+        self.cos = self.input_g("Coste Total Reparación (€)")
         for w in [b1, self.rd_k, b2, self.rt_k, b3, b4, self.itv_m, self.itv_a, self.obs, self.cos]: self.content.add_widget(w)
         btn_a = Button(text="ATRÁS"); btn_a.bind(on_press=lambda x: setattr(self.manager, 'current', 'pag3'))
-        btn_g = Button(text="GUARDAR", background_color=(0.1, 0.6, 0.3, 1), bold=True); btn_g.bind(on_press=self.finalizar)
+        btn_g = Button(text="GUARDAR TRABAJO", background_color=(0.1, 0.6, 0.3, 1), bold=True); btn_g.bind(on_press=self.finalizar)
         self.nav_bar.add_widget(btn_a); self.nav_bar.add_widget(btn_g); self.add_widget(l)
 
     def finalizar(self, x):
-        d = App.get_running_app().datos; f_hoy = datetime.now().strftime("%d/%m/%Y")
+        d = App.get_running_app().datos
+        f_hoy = datetime.now().strftime("%d/%m/%Y")
         conn = conectar_bd()
         if conn:
             c = conn.cursor()
             try:
                 c.execute('''INSERT INTO fichas (modelo, matricula, km_act, aceite_chk, aceite_det, aceite_km, 
                              caja_chk, caja_det, caja_km, f_aire, ref_f1, f_aceite, ref_f2, f_polen, ref_f3, 
-                             f_comb, ref_f4, f_anti, anti_tipo, r_del_chk, r_del_km, r_tra_chk, r_tra_km, 
-                             frenos, luces, averia, coste, fecha, mecanico, itv_mes, itv_ano) 
-                             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+                             f_comb, ref_f4, f_anti, anti_det, r_del_chk, r_del_km, r_tra_chk, r_tra_km, frenos, luces, 
+                             averia, coste, fecha, mecanico, itv_mes, itv_ano) 
+                             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
                           (d.get('mod',''), d.get('mat',''), d.get('km',''), d.get('ac_chk','False'), d.get('ac_det',''), d.get('ac_km',''), 
                            d.get('cj_chk','False'), d.get('cj_det',''), d.get('cj_km',''), d.get('f1','False'), d.get('r1',''), 
-                           d.get('f2','False'), d.get('r2',''), d.get('f3','False'), d.get('r3',''), d.get('f4','False'), d.get('r4',''), 
-                           d.get('anti','False'), d.get('anti_t',''), str(self.rd_c.active), self.rd_k.text, 
+                           d.get('f2','False'), d.get('r2',''), d.get('f3','False'), d.get('r3',''), d.get('f4','False'), 
+                           d.get('r4',''), d.get('anti','False'), d.get('anti_det',''), str(self.rd_c.active), self.rd_k.text, 
                            str(self.rt_c.active), self.rt_k.text, str(self.fre.active), str(self.luc.active), 
                            self.obs.text, self.cos.text, f_hoy, d.get('mec',''), self.itv_m.text, self.itv_a.text))
                 conn.commit()
                 App.get_running_app().limpiar_todas_las_pantallas()
-                App.get_running_app().datos = {}; self.manager.current = 'pag1'
+                App.get_running_app().datos = {}
+                self.manager.current = 'pag1'
             except Exception as e: print(f"Error: {e}")
             finally: conn.close()
 
 class PantallaHistorial(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.layout_p = self.crear_contenedor("HISTORIAL")
-        self.busc = TextInput(hint_text="Buscar matrícula...", size_hint_y=None, height='60dp', font_size='18sp')
+        self.layout_p = self.crear_contenedor("HISTORIAL DE TRABAJOS")
+        self.busc = TextInput(hint_text="Buscar por matrícula...", size_hint_y=None, height='60dp', font_size='18sp')
         self.busc.bind(text=self.actualizar_lista)
         self.layout_p.add_widget(self.busc, index=2)
         btn_v = Button(text="VOLVER"); btn_v.bind(on_press=lambda x: setattr(self.manager, 'current', 'pag1'))
@@ -185,22 +192,56 @@ class PantallaHistorial(PantallaBase):
         c = conn.cursor()
         c.execute("SELECT id, modelo, matricula, fecha FROM fichas WHERE matricula LIKE ? ORDER BY id DESC", (f'%{self.busc.text}%',))
         for f in c.fetchall():
-            btn = Button(text=f"{f[3]} | {f[2]}", size_hint_y=None, height='65dp', background_color=(0.9,0.9,0.9,1), color=(0,0,0,1))
+            btn = Button(text=f"{f[3]}  |  {f[2]} ({f[1]})", size_hint_y=None, height='65dp', background_color=(0.9, 0.9, 0.9, 1), color=(0,0,0,1))
             btn.bind(on_press=lambda x, id_f=f[0]: self.ver_detalle(id_f))
             self.content.add_widget(btn)
         conn.close()
 
     def ver_detalle(self, id_f):
         conn = conectar_bd(); f = conn.cursor().execute("SELECT * FROM fichas WHERE id=?", (id_f,)).fetchone(); conn.close()
-        inf = (f"*REPARACIONES RP Y AJ*\nFecha: {f[28]}\nVehículo: {f[1]} ({f[2]})\nKM: {f[3]}\n"
-               f"--------------------------\n*TRABAJOS:*\n- Aceite: {f[4]} ({f[5]}). Próx: {f[6]}\n"
-               f"- Caja: {f[7]} ({f[8]}). Próx: {f[9]}\n- Filtros: Aire({f[10]}), Aceite({f[12]}), Polen({f[14]}), Comb({f[16]})\n"
-               f"- Anticongelante: {f[18]} (Tipo: {f[19]})\n- Ruedas: D:{f[21]} T:{f[23]}\n- ITV: {f[30]}/{f[31]}\n"
-               f"--------------------------\n*Notas:* {f[26]}\n*Coste:* {f[27]}€\n*Mecánico:* {f[29]}")
+        inf = (f"*REPARACIONES RP Y AJ - INFORME*\n"
+               f"FECHA: {f[27]} | MECÁNICO: {f[28]}\n"
+               f"VEHÍCULO: {f[1]} ({f[2]}) | KM: {f[3]}\n"
+               f"--------------------------------\n"
+               f"*LÍQUIDOS Y FILTROS:*\n"
+               f"- Aceite Motor: {f[4]} ({f[5]}). Próx: {f[6]}\n"
+               f"- Aceite Caja: {f[7]} ({f[8]}). Próx: {f[9]}\n"
+               f"- Filtros: Aire({f[10]}), Aceite({f[12]}), Polen({f[14]}), Comb({f[16]})\n"
+               f"- Anticongelante: {f[18]} ({f[19]})\n"
+               f"--------------------------------\n"
+               f"*REVISIÓN:*\n"
+               f"- Ruedas Del: {f[20]} ({f[21]}km) | Tra: {f[22]} ({f[23]}km)\n"
+               f"- Frenos/Luces: {f[24]}/{f[25]}\n"
+               f"- ITV: {f[29]}/{f[30]}\n"
+               f"--------------------------------\n"
+               f"*NOTAS:* {f[26]}\n*COSTE:* {f[27]}€")
         lay = BoxLayout(orientation='vertical', padding=10, spacing=10)
-        scroll = ScrollView(); scroll.add_widget(Label(text=inf, size_hint_y=None, height='700dp', halign='left', text_size=(Window.width*0.8, None)))
-        btn_w = Button(text="WHATSAPP", background_color=(0.1, 0.7, 0.3, 1), size_hint_y=None, height='60dp')
-        btn_w.bind(on_press=lambda x: self.enviar_wa(inf))
-        btn_c = Button(text="CERRAR", size_hint_y=None, height='50dp')
-        lay.add_widget(scroll); lay.add_widget(btn_w); lay.add_widget(btn_c)
-        pop = Popup(title="Detalle", content=lay
+        scroll = ScrollView(); scroll.add_widget(Label(text=inf, size_hint_y=None, height='650dp', color=(1,1,1,1), halign='left', valign='top', text_size=(Window.width*0.8, None)))
+        btn_w = Button(text="WHATSAPP", background_color=(0.1, 0.7, 0.3, 1), size_hint_y=None, height='60dp', bold=True); btn_w.bind(on_press=lambda x: self.enviar_wa(inf))
+        btn_c = Button(text="CERRAR", size_hint_y=None, height='50dp'); lay.add_widget(scroll); lay.add_widget(btn_w); lay.add_widget(btn_c)
+        pop = Popup(title="Detalle del Trabajo", content=lay, size_hint=(0.95, 0.95)); btn_c.bind(on_press=pop.dismiss); pop.open()
+
+    def enviar_wa(self, texto):
+        url = f"https://wa.me/?text={urllib.parse.quote(texto)}"
+        if platform == 'android':
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            intent = autoclass('android.content.Intent')(autoclass('android.content.Intent').ACTION_VIEW, autoclass('android.net.Uri').parse(url))
+            PythonActivity.mActivity.startActivity(intent)
+        else: webbrowser.open(url)
+
+class MiApp(App):
+    datos = {}
+    def limpiar_todas_las_pantallas(self):
+        for nombre in ['pag1', 'pag2', 'pag3', 'pag4']:
+            for w in self.root.get_screen(nombre).walk():
+                if isinstance(w, TextInput): w.text = ""
+                elif isinstance(w, CheckBox): w.active = False
+    def build(self):
+        sm = ScreenManager(transition=FadeTransition())
+        sm.add_widget(PaginaUno(name='pag1')); sm.add_widget(PaginaDos(name='pag2'))
+        sm.add_widget(PaginaTres(name='pag3')); sm.add_widget(PaginaCuatro(name='pag4'))
+        sm.add_widget(PantallaHistorial(name='historial'))
+        return sm
+
+if __name__ == '__main__':
+    MiApp().run()
