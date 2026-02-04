@@ -14,6 +14,7 @@ from kivy.uix.popup import Popup
 from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle
 from kivy.utils import platform
+from kivy.uix.image import Image
 
 if platform == 'android':
     from jnius import autoclass
@@ -30,7 +31,6 @@ def conectar_bd():
         else:
             directorio = os.path.dirname(os.path.abspath(__file__))
         
-        # Saltamos a v7 para asegurar que la tabla tenga todas las columnas
         ruta_db = os.path.join(directorio, 'garaje_pipo_v7.db')
         conn = sqlite3.connect(ruta_db)
         cursor = conn.cursor()
@@ -97,7 +97,6 @@ class PaginaUno(PantallaBase):
         btn_s = Button(text="SIGUIENTE", background_color=(0.1, 0.5, 0.8, 1), bold=True)
         btn_s.bind(on_press=self.sig)
         self.nav_bar.add_widget(btn_h); self.nav_bar.add_widget(btn_s); self.add_widget(l)
-
     def sig(self, x):
         App.get_running_app().datos.update({'mec':self.mec.text, 'mod':self.mod.text, 'mat':self.mat.text, 'km':self.km.text})
         self.manager.current = 'pag2'
@@ -106,13 +105,12 @@ class PaginaDos(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         l = self.crear_contenedor("2. LÍQUIDOS")
-        b1, self.ac_chk = self.check_g("Cambio Aceite Motor"); self.ac_det = self.input_g("Tipo Aceite"); self.ac_km = self.input_g("Próximo Cambio (KM)")
-        b2, self.cj_chk = self.check_g("Cambio Valvulina Caja"); self.cj_det = self.input_g("Tipo Valvulina"); self.cj_km = self.input_g("Próximo Cambio Caja")
+        b1, self.ac_chk = self.check_g("Aceite Motor"); self.ac_det = self.input_g("Tipo Aceite"); self.ac_km = self.input_g("Próximo Cambio (KM)")
+        b2, self.cj_chk = self.check_g("Valvulina Caja"); self.cj_det = self.input_g("Tipo Valvulina"); self.cj_km = self.input_g("Próximo Cambio Caja")
         for w in [b1, self.ac_det, self.ac_km, b2, self.cj_det, self.cj_km]: self.content.add_widget(w)
         btn_a = Button(text="ATRÁS"); btn_a.bind(on_press=lambda x: setattr(self.manager, 'current', 'pag1'))
         btn_s = Button(text="SIGUIENTE"); btn_s.bind(on_press=self.sig)
         self.nav_bar.add_widget(btn_a); self.nav_bar.add_widget(btn_s); self.add_widget(l)
-
     def sig(self, x):
         App.get_running_app().datos.update({'ac_chk':str(self.ac_chk.active), 'ac_det':self.ac_det.text, 'ac_km':self.ac_km.text, 'cj_chk':str(self.cj_chk.active), 'cj_det':self.cj_det.text, 'cj_km':self.cj_km.text})
         self.manager.current = 'pag3'
@@ -130,7 +128,6 @@ class PaginaTres(PantallaBase):
         btn_a = Button(text="ATRÁS"); btn_a.bind(on_press=lambda x: setattr(self.manager, 'current', 'pag2'))
         btn_s = Button(text="SIGUIENTE"); btn_s.bind(on_press=self.sig)
         self.nav_bar.add_widget(btn_a); self.nav_bar.add_widget(btn_s); self.add_widget(l)
-
     def sig(self, x):
         App.get_running_app().datos.update({'f1':str(self.f1.active), 'r1':self.r1.text, 'f2':str(self.f2.active), 'r2':self.r2.text, 'f3':str(self.f3.active), 'r3':self.r3.text, 'f4':str(self.f4.active), 'r4':self.r4.text, 'anti':str(self.anti.active), 'anti_det':self.anti_det.text})
         self.manager.current = 'pag4'
@@ -147,7 +144,6 @@ class PaginaCuatro(PantallaBase):
         self.cos = self.input_g("Coste Total (€)")
         for w in [b1, self.rd_k, b2, self.rt_k, b3, b4, self.itv_m, self.itv_a, self.obs, self.cos]: self.content.add_widget(w)
         btn_a = Button(text="ATRÁS"); btn_a.bind(on_press=lambda x: setattr(self.manager, 'current', 'pag3'))
-        # Botón de Guardado mejorado
         btn_g = Button(text="GUARDAR\nTRABAJO", halign='center', background_color=(0.1, 0.6, 0.3, 1), bold=True)
         btn_g.bind(on_press=self.finalizar)
         self.nav_bar.add_widget(btn_a); self.nav_bar.add_widget(btn_g); self.add_widget(l)
@@ -165,7 +161,6 @@ class PaginaCuatro(PantallaBase):
                            d.get('r4',''), d.get('anti','False'), d.get('anti_det',''), str(self.rd_c.active), self.rd_k.text, 
                            str(self.rt_c.active), self.rt_k.text, str(self.fre.active), str(self.luc.active), 
                            self.obs.text, self.cos.text, f_hoy, d.get('mec',''), self.itv_m.text, self.itv_a.text)
-                
                 c.execute('''INSERT INTO fichas (modelo, matricula, km_act, aceite_chk, aceite_det, aceite_km, 
                              caja_chk, caja_det, caja_km, f_aire, ref_f1, f_aceite, ref_f2, f_polen, ref_f3, 
                              f_comb, ref_f4, f_anti, anti_det, r_del_chk, r_del_km, r_tra_chk, r_tra_km, frenos, luces, 
@@ -175,7 +170,7 @@ class PaginaCuatro(PantallaBase):
                 App.get_running_app().limpiar_todas_las_pantallas()
                 App.get_running_app().datos = {}
                 self.manager.current = 'pag1'
-            except Exception as e: print(f"Error Guardado: {e}")
+            except Exception as e: print(f"Error: {e}")
             finally: conn.close()
 
 class PantallaHistorial(PantallaBase):
@@ -202,16 +197,54 @@ class PantallaHistorial(PantallaBase):
         conn.close()
 
     def ver_detalle(self, id_f):
-        conn = conectar_bd(); f = conn.cursor().execute("SELECT * FROM fichas WHERE id=?", (id_f,)).fetchone(); conn.close()
-        # Mapeo de columnas para v7: anti es f[18], anti_det es f[19]
-        inf = (f"*EL GARAJE DE PIPO*\nFecha: {f[27]}\nCoche: {f[1]} ({f[2]})\n"
-               f"Aceite: {f[5]} | Caja: {f[8]}\nAnticong.: {f[19]}\nITV: {f[29]}/{f[30]}\nCoste: {f[26]}€")
+        conn = conectar_bd()
+        f = conn.cursor().execute("SELECT * FROM fichas WHERE id=?", (id_f,)).fetchone()
+        conn.close()
+
+        res_full = (
+            f"🛠️ *EL GARAJE DE PIPO RP Y AJ - INFORME*\n"
+            f"--------------------------------\n"
+            f"📅 FECHA: {f[28]}\n"
+            f"👨‍🔧 MECÁNICO: {f[29]}\n"
+            f"🚗 COCHE: {f[1]} | {f[2]}\n"
+            f"🛣️ KM: {f[3]}\n"
+            f"--------------------------------\n"
+            f"🛢️ LÍQUIDOS:\n"
+            f"- Aceite Motor: {'SÍ' if f[4]=='True' else 'NO'} ({f[5]}) | Prox: {f[6]} KM\n"
+            f"- Valvulina Caja: {'SÍ' if f[7]=='True' else 'NO'} ({f[8]}) | Prox: {f[9]} KM\n"
+            f"- Anticongelante: {'SÍ' if f[18]=='True' else 'NO'} ({f[19]})\n"
+            f"--------------------------------\n"
+            f"🔍 FILTROS:\n"
+            f"- Aire: {f[11]} | Aceite: {f[13]}\n"
+            f"- Polen: {f[15]} | Combustible: {f[17]}\n"
+            f"--------------------------------\n"
+            f"🛞 REVISIÓN:\n"
+            f"- Ruedas Del: {f[21]} KM | Tra: {f[23]} KM\n"
+            f"- Frenos: {f[24]} | Luces: {f[25]}\n"
+            f"--------------------------------\n"
+            f"📅 ITV: {f[30]}/{f[31]}\n"
+            f"📝 NOTAS: {f[26]}\n"
+            f"💰 COSTE: {f[27]}€"
+        )
+
         lay = BoxLayout(orientation='vertical', padding=10, spacing=10)
-        scroll = ScrollView(); scroll.add_widget(Label(text=inf, size_hint_y=None, height='400dp', halign='left', text_size=(Window.width*0.8, None)))
-        btn_w = Button(text="WHATSAPP", background_color=(0.1, 0.7, 0.3, 1), size_hint_y=None, height='60dp')
-        btn_w.bind(on_press=lambda x: self.enviar_wa(inf))
-        btn_c = Button(text="CERRAR", size_hint_y=None, height='50dp'); lay.add_widget(scroll); lay.add_widget(btn_w); lay.add_widget(btn_c)
-        pop = Popup(title="Detalle", content=lay, size_hint=(0.9, 0.9)); btn_c.bind(on_press=pop.dismiss); pop.open()
+        if os.path.exists('logo.png'):
+            lay.add_widget(Image(source='logo.png', size_hint_y=None, height='80dp'))
+        
+        scroll = ScrollView()
+        scroll.add_widget(Label(text=res_full, size_hint_y=None, height='850dp', halign='left', valign='top', text_size=(Window.width*0.85, None), color=(0,0,0,1)))
+        
+        btn_box = BoxLayout(size_hint_y=None, height='60dp', spacing=5)
+        btn_w = Button(text="WHATSAPP", background_color=(0.1, 0.7, 0.3, 1), bold=True)
+        btn_w.bind(on_press=lambda x: self.enviar_wa(res_full))
+        btn_p = Button(text="VER PDF (Próx.)", background_color=(0.8, 0.2, 0.2, 1))
+        
+        btn_box.add_widget(btn_w); btn_box.add_widget(btn_p)
+        btn_c = Button(text="CERRAR", size_hint_y=None, height='45dp')
+        lay.add_widget(scroll); lay.add_widget(btn_box); lay.add_widget(btn_c)
+        
+        pop = Popup(title=f"Ficha {f[2]}", content=lay, size_hint=(0.95, 0.95))
+        btn_c.bind(on_press=pop.dismiss); pop.open()
 
     def enviar_wa(self, texto):
         url = f"https://wa.me/?text={urllib.parse.quote(texto)}"
