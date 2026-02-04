@@ -1,6 +1,6 @@
 [app]
-title = Mi Garaje
-package.name = migaraje
+title = El Garaje de PIPO
+package.name = elgarajedepipo
 package.domain = org.test
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
