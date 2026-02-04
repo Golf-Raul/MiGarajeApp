@@ -51,7 +51,7 @@ class FilaPieza(BoxLayout):
 class PaginaBase(Screen):
     def crear_cabecera(self, titulo):
         layout = BoxLayout(orientation='vertical')
-        header = Label(text=f"{titulo}\nLos PIPOS RA Y AJ", size_hint_y=None, height='80dp', bold=True)
+        header = Label(text=f"{titulo}\nBY LOS PIPOS RA Y AJ", size_hint_y=None, height='80dp', bold=True)
         with header.canvas.before:
             Color(0.1, 0.4, 0.7, 1)
             self.rect = Rectangle(size=header.size, pos=header.pos)
@@ -171,7 +171,7 @@ class PantallaHistorial(PaginaBase):
     def enviar_informe(self, idx):
         conn = conectar_bd(); f = conn.cursor().execute("SELECT * FROM fichas WHERE id=?", (idx,)).fetchone(); conn.close()
         # INFORME TOTAL CON TODOS LOS 21 CAMPOS
-        msg = f"🛠️ *INFORME GARAJE PIPOs RA Y AJ*\n"
+        msg = f"🛠️ *INFORME GARAJE PIPOS RA Y AJ*\n"
         msg += f"━━━━━━━━━━━━━━━━━━━━\n"
         msg += f"🚗 *VEHÍCULO:* {f[2]} | *MAT:* {f[3]}\n"
         msg += f"📅 *FECHA:* {f[20]} | 👨‍🔧 {f[1]}\n"
