@@ -5,7 +5,7 @@ package.domain = org.raulplaza
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0
-requirements = python3,kivy==2.2.1,android,sqlite3,pillow
+requirements = python3,kivy==2.2.1,android,sqlite3,pillow,pyjnius
 orientation = portrait
 fullscreen = 0
 android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
