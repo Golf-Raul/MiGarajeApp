@@ -19,7 +19,7 @@ from kivy.uix.popup import Popup
 from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle
 
-# --- CONTROL DE ERRORES CRÍTICOS ---
+# --- CONTROL DE ERRORES ---
 try:
     from fpdf import FPDF
     PDF_DISPONIBLE = True
@@ -30,10 +30,11 @@ Window.clearcolor = (0.9, 0.9, 0.9, 1)
 
 def conectar_bd():
     try:
-        ruta_db = 'mantenimiento_raul.db'
+        # Base de datos con nombre nuevo para evitar conflictos en el móvil
+        ruta_db = 'mantenimiento_db.db' 
         conn = sqlite3.connect(ruta_db)
         cursor = conn.cursor()
-        # Añadidas columnas de referencias (ref_f1, ref_f2, etc.)
+        
         cursor.execute('''CREATE TABLE IF NOT EXISTS fichas 
                           (id INTEGER PRIMARY KEY, modelo TEXT, matricula TEXT, km_act TEXT,
                            aceite_chk TEXT, aceite_det TEXT, aceite_km TEXT,
@@ -69,7 +70,8 @@ class PantallaBase(Screen):
         self.nav_bar = BoxLayout(size_hint_y=None, height=140, spacing=20, padding=10)
         layout_total.add_widget(self.nav_bar)
         
-        pie = Label(text="APP CREADA POR Raul Plaza", size_hint_y=None, height=50, font_size=22, color=(0.4, 0.4, 0.4, 1), bold=True)
+        # Pie de página personalizado
+        pie = Label(text="APP CREADA POR RAUL PLAZA", size_hint_y=None, height=50, font_size=22, color=(0.4, 0.4, 0.4, 1), bold=True)
         layout_total.add_widget(pie)
         return layout_total
 
@@ -135,7 +137,7 @@ class PantallaHistorial(PantallaBase):
         f = c.fetchone()
         conn.close()
         contenido = BoxLayout(orientation='vertical', padding=20, spacing=10)
-        txt = f"MODELO: {f[1]}\nMATRÍCULA: {f[2]}\nFECHA: {f[30]}\nKM: {f[3]}\nREFERENCIAS:\nAire: {f[11]} | Aceite: {f[13]}\nPolen: {f[15]} | Comb: {f[17]}"
+        txt = f"MODELO: {f[1]}\nMATRÍCULA: {f[2]}\nFECHA: {f[30]}\nREFS:\nAire: {f[11]} | Aceite: {f[13]}\nPolen: {f[15]} | Comb: {f[17]}"
         contenido.add_widget(Label(text=txt, font_size=26, bold=True))
         btn_cerrar = Button(text="CERRAR", size_hint_y=None, height=100, bold=True)
         pop = Popup(title="RESUMEN", content=contenido, size_hint=(0.9, 0.8))
@@ -181,20 +183,16 @@ class PaginaTres(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         l = self.crear_contenedor("FILTROS Y RUEDAS")
-        # Filtros con sus referencias
         b_f1, self.f1 = self.check_g("F. Aire"); self.r1 = self.input_g("Ref. Filtro Aire", alto=90)
         b_f2, self.f2 = self.check_g("F. Aceite"); self.r2 = self.input_g("Ref. Filtro Aceite", alto=90)
         b_f3, self.f3 = self.check_g("F. Polen"); self.r3 = self.input_g("Ref. Filtro Polen", alto=90)
         b_f4, self.f4 = self.check_g("F. Combustible"); self.r4 = self.input_g("Ref. Filtro Combustible", alto=90)
-        
         for w in [b_f1, self.r1, b_f2, self.r2, b_f3, self.r3, b_f4, self.r4]: self.content.add_widget(w)
-        
         b_fa, self.fa = self.check_g("Anticongelante"); self.content.add_widget(b_fa)
         b_rd, self.rdc = self.check_g("Ruedas Del."); self.rdk = self.input_g("Km Ruedas Del.", alto=90)
         b_rt, self.rtc = self.check_g("Ruedas Tras."); self.rtk = self.input_g("Km Ruedas Tras.", alto=90)
         self.content.add_widget(b_rd); self.content.add_widget(self.rdk)
         self.content.add_widget(b_rt); self.content.add_widget(self.rtk)
-        
         btn_sig = Button(text="SIGUIENTE", background_color=(0.1, 0.6, 0.3, 1), font_size=30, bold=True)
         btn_sig.bind(on_press=self.ir_sig)
         self.nav_bar.add_widget(btn_sig)
@@ -202,10 +200,8 @@ class PaginaTres(PantallaBase):
 
     def ir_sig(self, x):
         App.get_running_app().datos.update({
-            'f1':str(self.f1.active), 'rf1':self.r1.text,
-            'f2':str(self.f2.active), 'rf2':self.r2.text,
-            'f3':str(self.f3.active), 'rf3':self.r3.text,
-            'f4':str(self.f4.active), 'rf4':self.r4.text,
+            'f1':str(self.f1.active), 'rf1':self.r1.text, 'f2':str(self.f2.active), 'rf2':self.r2.text,
+            'f3':str(self.f3.active), 'rf3':self.r3.text, 'f4':str(self.f4.active), 'rf4':self.r4.text,
             'fa':str(self.fa.active), 'rdc':str(self.rdc.active), 'rdk':self.rdk.text, 'rtc':str(self.rtc.active), 'rtk':self.rtk.text
         })
         self.manager.current = 'pag4'
@@ -249,24 +245,10 @@ class PaginaCuatro(PantallaBase):
                        self.obs.text, self.cos.text, f_hoy, d['mec'], self.itv_m.text, self.itv_a.text))
             conn.commit(); conn.close()
         
-        if PDF_DISPONIBLE:
-            try:
-                pdf = FPDF(); pdf.add_page()
-                if os.path.exists("logo.png"): pdf.image("logo.png", 10, 8, 33)
-                pdf.set_font("Arial", 'B', 16)
-                pdf.cell(200, 10, txt="REPARACIONES RP Y AJ", ln=True, align='C')
-                pdf.ln(10); pdf.set_font("Arial", size=11)
-                pdf.cell(200, 10, txt=f"FECHA: {f_hoy} | MATRICULA: {d['mat']}", ln=True)
-                pdf.cell(200, 10, txt=f"REFS FILTROS: Aire:{d['rf1']} | Aceite:{d['rf2']} | Polen:{d['rf3']} | Comb:{d['rf4']}", ln=True)
-                pdf.ln(5)
-                pdf.multi_cell(0, 10, txt=f"OBSERVACIONES: {self.obs.text}")
-                pdf.output(f"Mantenimiento_{d['mat']}.pdf")
-            except: pass
-
         if enviar:
-            mensaje = f"*REPARACIONES RP Y AJ*\n\n✅ *Vehículo:* {d['mod']}\n🆔 *Matrícula:* {d['mat']}\n💶 *Coste:* {self.cos.text}€"
+            # ACTUALIZADO: REPARACIONES RP y AJ
+            mensaje = f"*REPARACIONES RP y AJ*\n\n✅ *Vehículo:* {d['mod']}\n🆔 *Matrícula:* {d['mat']}\n💶 *Coste:* {self.cos.text}€"
             webbrowser.open(f"https://wa.me/?text={quote(mensaje)}")
-        
         self.manager.current = 'pag1'
 
 class MiApp(App):
