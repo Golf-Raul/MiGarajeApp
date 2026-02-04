@@ -51,6 +51,7 @@ def conectar_bd():
         print(f"Error BD: {e}")
         return None
 
+# --- CLASE BASE ---
 class PantallaBase(Screen):
     def crear_contenedor(self, titulo):
         layout_total = BoxLayout(orientation='vertical')
@@ -83,6 +84,7 @@ class PantallaBase(Screen):
         box.add_widget(cb)
         return box, cb
 
+# --- PÁGINAS DE DATOS ---
 class PaginaUno(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -104,7 +106,7 @@ class PaginaUno(PantallaBase):
 class PaginaDos(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        l = self.crear_contenedor("2. LÍQUIDOS")
+        l = self.crear_contenedor("2. MOTOR Y CAJA CAMBIOS")
         b1, self.ac_chk = self.check_g("Aceite Motor"); self.ac_det = self.input_g("Tipo Aceite"); self.ac_km = self.input_g("Próximo Cambio (KM)")
         b2, self.cj_chk = self.check_g("Valvulina Caja"); self.cj_det = self.input_g("Tipo Valvulina"); self.cj_km = self.input_g("Próximo Cambio Caja")
         for w in [b1, self.ac_det, self.ac_km, b2, self.cj_det, self.cj_km]: self.content.add_widget(w)
@@ -173,17 +175,19 @@ class PaginaCuatro(PantallaBase):
             except Exception as e: print(f"Error: {e}")
             finally: conn.close()
 
+# --- HISTORIAL CON BORRADO Y FICHA HTML ---
 class PantallaHistorial(PantallaBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.layout_p = self.crear_contenedor("HISTORIAL")
-        self.busc = TextInput(hint_text="Matrícula...", size_hint_y=None, height='60dp', font_size='18sp')
+        self.busc = TextInput(hint_text="Buscar Matrícula...", size_hint_y=None, height='60dp', font_size='18sp')
         self.busc.bind(text=self.actualizar_lista)
         self.layout_p.add_widget(self.busc, index=2)
         btn_v = Button(text="VOLVER"); btn_v.bind(on_press=lambda x: setattr(self.manager, 'current', 'pag1'))
         self.nav_bar.add_widget(btn_v); self.add_widget(self.layout_p)
 
     def on_pre_enter(self): self.actualizar_lista()
+    
     def actualizar_lista(self, *args):
         self.content.clear_widgets()
         conn = conectar_bd()
@@ -191,68 +195,108 @@ class PantallaHistorial(PantallaBase):
         c = conn.cursor()
         c.execute("SELECT id, modelo, matricula, fecha FROM fichas WHERE matricula LIKE ? ORDER BY id DESC", (f'%{self.busc.text}%',))
         for f in c.fetchall():
-            btn = Button(text=f"{f[3]} | {f[2]}", size_hint_y=None, height='65dp', color=(0,0,0,1))
+            fila = BoxLayout(size_hint_y=None, height='70dp', spacing=5)
+            btn = Button(text=f"{f[3]} | {f[2]}", color=(0,0,0,1), background_color=(1,1,1,1))
             btn.bind(on_press=lambda x, id_f=f[0]: self.ver_detalle(id_f))
-            self.content.add_widget(btn)
+            
+            btn_borrar = Button(text="X", size_hint_x=None, width='60dp', background_color=(0.8, 0, 0, 1), bold=True)
+            btn_borrar.bind(on_press=lambda x, id_f=f[0]: self.confirmar_borrado(id_f))
+            
+            fila.add_widget(btn)
+            fila.add_widget(btn_borrar)
+            self.content.add_widget(fila)
         conn.close()
+
+    def confirmar_borrado(self, id_f):
+        cont = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        pop = Popup(title="¿Borrar Ficha?", content=cont, size_hint=(0.8, 0.4))
+        btn = Button(text="SÍ, ELIMINAR", background_color=(1,0,0,1))
+        btn.bind(on_press=lambda x: self.borrar_ficha(id_f, pop))
+        cont.add_widget(Label(text="Esta acción no se puede deshacer"))
+        cont.add_widget(btn)
+        pop.open()
+
+    def borrar_ficha(self, id_f, pop):
+        conn = conectar_bd()
+        conn.cursor().execute("DELETE FROM fichas WHERE id=?", (id_f,))
+        conn.commit()
+        conn.close()
+        pop.dismiss()
+        self.actualizar_lista()
 
     def ver_detalle(self, id_f):
         conn = conectar_bd()
         f = conn.cursor().execute("SELECT * FROM fichas WHERE id=?", (id_f,)).fetchone()
         conn.close()
 
-        res_full = (
-            f"🛠️ *EL GARAJE DE PIPO RP Y AJ - INFORME*\n"
-            f"--------------------------------\n"
-            f"📅 FECHA: {f[28]}\n"
-            f"👨‍🔧 MECÁNICO: {f[29]}\n"
-            f"🚗 COCHE: {f[1]} | {f[2]}\n"
-            f"🛣️ KM: {f[3]}\n"
-            f"--------------------------------\n"
-            f"🛢️ LÍQUIDOS:\n"
-            f"- Aceite Motor: {'SÍ' if f[4]=='True' else 'NO'} ({f[5]}) | Prox: {f[6]} KM\n"
-            f"- Valvulina Caja: {'SÍ' if f[7]=='True' else 'NO'} ({f[8]}) | Prox: {f[9]} KM\n"
-            f"- Anticongelante: {'SÍ' if f[18]=='True' else 'NO'} ({f[19]})\n"
-            f"--------------------------------\n"
-            f"🔍 FILTROS:\n"
-            f"- Aire: {f[11]} | Aceite: {f[13]}\n"
-            f"- Polen: {f[15]} | Combustible: {f[17]}\n"
-            f"--------------------------------\n"
-            f"🛞 REVISIÓN:\n"
-            f"- Ruedas Del: {f[21]} KM | Tra: {f[23]} KM\n"
-            f"- Frenos: {f[24]} | Luces: {f[25]}\n"
-            f"--------------------------------\n"
-            f"📅 ITV: {f[30]}/{f[31]}\n"
-            f"📝 NOTAS: {f[26]}\n"
-            f"💰 COSTE: {f[27]}€"
-        )
+        # Tu resumen de WhatsApp que tanto te gusta
+        res_wa = (f"🛠️ *EL GARAJE DE PIPO RP Y AJ*\n"
+                  f"Fecha: {f[28]}\n"
+                  f"Coche: {f[1]} ({f[2]})\n"
+                  f"KM: {f[3]}\n"
+                  f"Aceite: {f[5]} | Filtros: OK\n"
+                  f"Coste: {f[27]}€\n"
+                  f"¡Gracias por su confianza!")
 
         lay = BoxLayout(orientation='vertical', padding=10, spacing=10)
         if os.path.exists('logo.png'):
             lay.add_widget(Image(source='logo.png', size_hint_y=None, height='80dp'))
         
         scroll = ScrollView()
-        scroll.add_widget(Label(text=res_full, size_hint_y=None, height='850dp', halign='left', valign='top', text_size=(Window.width*0.85, None), color=(0,0,0,1)))
+        scroll.add_widget(Label(text=res_wa, size_hint_y=None, height='500dp', halign='left', color=(0,0,0,1)))
         
         btn_box = BoxLayout(size_hint_y=None, height='60dp', spacing=5)
         btn_w = Button(text="WHATSAPP", background_color=(0.1, 0.7, 0.3, 1), bold=True)
-        btn_w.bind(on_press=lambda x: self.enviar_wa(res_full))
-        btn_p = Button(text="VER PDF (Próx.)", background_color=(0.8, 0.2, 0.2, 1))
+        btn_w.bind(on_press=lambda x: self.enviar_wa(res_wa))
         
-        btn_box.add_widget(btn_w); btn_box.add_widget(btn_p)
+        btn_h = Button(text="VER FACTURA", background_color=(0.1, 0.4, 0.8, 1), bold=True)
+        btn_h.bind(on_press=lambda x: self.crear_ficha_html(f))
+        
+        btn_box.add_widget(btn_w); btn_box.add_widget(btn_h)
         btn_c = Button(text="CERRAR", size_hint_y=None, height='45dp')
         lay.add_widget(scroll); lay.add_widget(btn_box); lay.add_widget(btn_c)
         
-        pop = Popup(title=f"Ficha {f[2]}", content=lay, size_hint=(0.95, 0.95))
+        pop = Popup(title=f"Detalle {f[2]}", content=lay, size_hint=(0.95, 0.9))
         btn_c.bind(on_press=pop.dismiss); pop.open()
 
     def enviar_wa(self, texto):
         url = f"https://wa.me/?text={urllib.parse.quote(texto)}"
+        webbrowser.open(url)
+
+    def crear_ficha_html(self, d):
+        # Genera un documento tipo factura profesional
+        html = f"""
+        <html><body style='font-family:sans-serif; padding:30px; line-height:1.6;'>
+        <div style='text-align:center; border-bottom:2px solid #054C99;'>
+            <h1 style='color:#054C99; margin:0;'>EL GARAJE DE PIPO RP Y AJ</h1>
+            <p>Informe de Servicio Mecánico</p>
+        </div>
+        <div style='margin-top:20px;'>
+            <p><b>FECHA:</b> {d[28]} | <b>MECÁNICO:</b> {d[29]}</p>
+            <p><b>VEHÍCULO:</b> {d[1]} | <b>MATRÍCULA:</b> {d[2]} | <b>KM:</b> {d[3]}</p>
+        </div>
+        <table style='width:100%; border-collapse:collapse; margin-top:20px;'>
+            <tr style='background:#f2f2f2;'><th style='padding:10px; border:1px solid #ddd;'>CONCEPTO</th><th style='border:1px solid #ddd;'>DETALLE</th></tr>
+            <tr><td style='padding:10px; border:1px solid #ddd;'>Aceite Motor</td><td style='border:1px solid #ddd;'>{d[5]} (Próx: {d[6]} km)</td></tr>
+            <tr><td style='padding:10px; border:1px solid #ddd;'>Valvulina</td><td style='border:1px solid #ddd;'>{d[8]}</td></tr>
+            <tr><td style='padding:10px; border:1px solid #ddd;'>Filtros Aire/Aceite</td><td style='border:1px solid #ddd;'>Ref: {d[11]} / {d[13]}</td></tr>
+            <tr><td style='padding:10px; border:1px solid #ddd;'>Frenos y Luces</td><td style='border:1px solid #ddd;'>Revisados OK</td></tr>
+            <tr><td style='padding:10px; border:1px solid #ddd;'>ITV Próxima</td><td style='border:1px solid #ddd;'>{d[30]}/{d[31]}</td></tr>
+        </table>
+        <div style='margin-top:30px; text-align:right;'>
+            <h2 style='color:#054C99;'>IMPORTE TOTAL: {d[27]}€</h2>
+        </div>
+        <p style='font-size:12px; color:gray; margin-top:50px;'>Documento generado por App El Garaje de Pipo</p>
+        </body></html>
+        """
         if platform == 'android':
-            PythonActivity = autoclass('org.kivy.android.PythonActivity')
-            intent = autoclass('android.content.Intent')(autoclass('android.content.Intent').ACTION_VIEW, autoclass('android.net.Uri').parse(url))
-            PythonActivity.mActivity.startActivity(intent)
-        else: webbrowser.open(url)
+            from android.storage import app_storage_path
+            ruta = os.path.join(app_storage_path(), "factura.html")
+        else:
+            ruta = os.path.join(os.path.dirname(os.path.abspath(__file__)), "factura.html")
+            
+        with open(ruta, "w", encoding="utf-8") as f: f.write(html)
+        webbrowser.open("file://" + ruta)
 
 class MiApp(App):
     datos = {}
@@ -261,12 +305,31 @@ class MiApp(App):
             for w in self.root.get_screen(nombre).walk():
                 if isinstance(w, TextInput): w.text = ""
                 elif isinstance(w, CheckBox): w.active = False
+
     def build(self):
         sm = ScreenManager(transition=FadeTransition())
         sm.add_widget(PaginaUno(name='pag1')); sm.add_widget(PaginaDos(name='pag2'))
         sm.add_widget(PaginaTres(name='pag3')); sm.add_widget(PaginaCuatro(name='pag4'))
         sm.add_widget(PantallaHistorial(name='historial'))
+        self.revisar_itv()
         return sm
+
+    def revisar_itv(self):
+        hoy = datetime.now()
+        conn = conectar_bd()
+        c = conn.cursor()
+        c.execute("SELECT modelo, matricula, itv_mes, itv_ano FROM fichas")
+        alertas = []
+        for f in c.fetchall():
+            try:
+                # Si el año coincide y el mes es este o el anterior
+                if str(f[3]) == str(hoy.year) and str(f[2]).zfill(2) == str(hoy.month).zfill(2):
+                    alertas.append(f"{f[0]} ({f[1]})")
+            except: continue
+        conn.close()
+        if alertas:
+            p = Popup(title="⚠️ AVISO ITV ESTE MES", content=Label(text="\n".join(alertas), halign='center'), size_hint=(0.8, 0.4))
+            p.open()
 
 if __name__ == '__main__':
     MiApp().run()
